@@ -1,5 +1,14 @@
 import numpy as np
 
+# To get a feeling for the choice of the PID gains, you will analyze how their choice influences the behavior of the waypoint tracking. 
+# Test different settings of the gains to be able to answer the following:
+# 1. If you keep increasing $K_P$, what issue arises when tracking the waypoints?
+# If the error is large and we have a high K_P, then there is the risk of an overshoot.
+
+# 2. How does $K_D$ mitigate the effect you saw above when increasing $K_P$?
+# The K_D term penalizes changes of the error, so if we have a lot of harsh movements due to a high K_P term, we get a high derivative which is penalized by K_D.
+# 3. In what scenarios is a non-zero $K_I$ needed for the controller to perform well?
+# If there is a steady-state error that we want to get rid of, then the Integral term will counter-act it.
 
 def generate_quintic_spline_waypoints(start, end, num_points):
 
@@ -19,10 +28,16 @@ def generate_quintic_spline_waypoints(start, end, num_points):
     Returns:
         np.ndarray: Generated waypoints.
     """
-    raise NotImplementedError()
+
+    s = np.linspace(0, 1, num_points)
+    f_s = 10*s**3 - 15*s**4 + 6*s**5
+
+    waypoints = start + (end-start) * f_s[:, np.newaxis]
+    
+    return waypoints
 
 
-def pid_control(tracking_error_history, timestep, Kp=150.0, Ki=0.0, Kd=0.01):
+def pid_control(tracking_error_history, timestep, Kp=750.0, Ki=0, Kd=0.02):
     """
     TODO:
     Compute the PID control signal based on the tracking error history.
@@ -44,5 +59,10 @@ def pid_control(tracking_error_history, timestep, Kp=150.0, Ki=0.0, Kd=0.01):
     Returns:
         np.ndarray: Control signal.
     """
-    raise NotImplementedError()
+    if len(tracking_error_history) == 0:
+        return 0
+    
+    integral = np.sum(tracking_error_history)
+    d_term = 0 if len(tracking_error_history) == 1 else (tracking_error_history[-2] - tracking_error_history[-1])
+    return Kp * tracking_error_history[-1] + Ki * integral * timestep + Kd * d_term / timestep
             

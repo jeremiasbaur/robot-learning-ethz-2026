@@ -38,6 +38,7 @@ class SO100TrackEnv(gym.Env):
 
         # Evaluation metrics
         self.ee_tracking_error = 0.0
+        self.ee_tracking_error_integral = 0.0
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed, options=options)
@@ -58,13 +59,14 @@ class SO100TrackEnv(gym.Env):
         return process_action(action, self.model.jnt_range)
 
     def compute_reward(self):
-        return compute_reward(self.ee_tracking_error)
+        return compute_reward(self.ee_tracking_error, self.ee_tracking_error_integral)
 
     def step(self, action):
         self.data.ctrl[:] = self._process_action(action)
         for _ in range(self.ctrl_decimation): 
             mujoco.mj_step(self.model, self.data)
         self.ee_tracking_error = np.linalg.norm(self.data.site("ee_site").xpos - self.data.mocap_pos[0])
+        self.ee_tracking_error_integral += self.ee_tracking_error
         reward = self.compute_reward()
 
         terminated = False

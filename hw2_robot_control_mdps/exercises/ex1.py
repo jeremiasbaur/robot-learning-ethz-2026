@@ -1,6 +1,24 @@
 import numpy as np
 import mujoco
 
+# ### Theoretical questions
+# 1. If you increase the width of the Lemniscate (increasing a), what issue can happen with the robot performing IK?
+# If the width is increased, e.g. to a=0.5, then the robot arm can't physically reach certain positions anymore and the IK problem doesn't have a solution and doesn't converge anymore.
+
+# 2. What can happen if you change the dt parameter in IK?
+# If it is decreased, the Damped Least Squares model can't find a solution to the IK problem in the standard max_iters timesteps, if it is increased, it can reach it.
+# If it is increased too much, then the Damped Least Squares might oscilate around a potential solution but doesn't converge.
+
+# 3. We implemented a simple numerical IK solver. What are the advantages and disadvantages compared to an analytical IK solver?
+# Advantages: No need to derive exact equations of system, works out of the box, 
+# Disadvantages: Might not converge, not exact solution, we always have a slight error (final solution upper-bounded by error tolerance if converged)
+# not as fast as analytical solution,
+# only returns one solution if converged
+
+# 4. What are the limits of our IK solver compared to state-of-the-art IK solvers?
+# SOTA IK solvers are faster and more exact, can handle singularities better
+# Constraints can be handeled in SOTA solvers
+
 
 def get_lemniscate_keypoint(t, a=0.2):
     """

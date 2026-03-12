@@ -64,6 +64,9 @@ class SO100TrackEnv(gym.Env):
         return process_action(action, self.model.jnt_range)
 
     def compute_reward(self):
+        # uncomment if you want to train the bonus RL policy
+        #return compute_reward(self.ee_tracking_error, self.ee_tracking_error_integral)
+        
         return compute_reward(self.ee_tracking_error, self.ee_tracking_error_integral)
 
     def step(self, action):

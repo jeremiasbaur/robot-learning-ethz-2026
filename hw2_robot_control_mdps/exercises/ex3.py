@@ -79,8 +79,10 @@ def process_action(action: np.ndarray, jnt_range: np.ndarray) -> np.ndarray:
     return jnt_range[:,0] + (1+action) * (jnt_range[:,1]-jnt_range[:,0])/2
 
 
+
+def compute_reward(ee_tracking_error: float) -> float:
+# comment above and uncomment below to train custom bonus RL policy
 #def compute_reward(ee_tracking_error: float) -> float: #, ee_tracking_error_integral: float=0) -> float:
-def compute_reward(ee_tracking_error: float, ee_tracking_error_integral: float=0.0) -> float:
     """
     TODO: 
     Calculate the reward based on the distance (error) to the target. 
@@ -102,8 +104,10 @@ def compute_reward(ee_tracking_error: float, ee_tracking_error_integral: float=0
     """
     dense_reward =  np.exp(-2*ee_tracking_error)
     sparse_reward = 1.0 if ee_tracking_error < 0.005 else 0.0
-    #return dense_reward + sparse_reward
-    return dense_reward + sparse_reward + (1/(1+ee_tracking_error_integral))
+    
+    # uncomment if you want to train the bonus RL policy
+    #return dense_reward + sparse_reward + (1/(1+ee_tracking_error_integral))
+    return dense_reward + sparse_reward
 
 
 def get_obs(qpos: np.ndarray, ee_pos_w: np.ndarray, ee_rot_w: np.ndarray, base_pos_w: np.ndarray, base_rot_w: np.ndarray, target_pos_w: np.ndarray) -> np.ndarray:

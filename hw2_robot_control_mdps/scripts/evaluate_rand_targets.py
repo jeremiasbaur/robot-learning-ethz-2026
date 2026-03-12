@@ -26,15 +26,30 @@ def reset_env(model, data):
      
 def policy_callback(model, data):
     step_count = getattr(policy_callback, "step_count", 0)
+
     if step_count == 0:
         reset_env(model, data)
     elif step_count % (play_episode_length * env.ctrl_decimation) == 0:
         ee_tracking_error = np.linalg.norm(data.site("ee_site").xpos - data.mocap_pos[0])
         policy_callback.total_ee_tracking_errors.append(ee_tracking_error)
         print(f"Final EE tracking error: {ee_tracking_error:.4f}")
+        #print(f"Has converged: {policy_callback.converged}, Final convergence time: {(policy_callback.convergence_time * 0.002 if policy_callback.converged else (step_count-policy_callback.last_reset_time)*0.002)}")
         reset_env(model, data)
+        policy_callback.total_convergence_times.append((policy_callback.convergence_time * 0.002 if policy_callback.converged else (step_count-policy_callback.last_reset_time)*0.002))
+        policy_callback.converged = False
+        policy_callback.convergence_time = 0
+        policy_callback.last_reset_time = policy_callback.step_count
+        
+
     elif step_count % env.ctrl_decimation == 0:
         obs = env._get_obs()
+        ee_tracking_error = np.linalg.norm(data.site("ee_site").xpos - data.mocap_pos[0])
+        if ee_tracking_error <= 0.01 and not policy_callback.converged:
+            policy_callback.converged = True
+            policy_callback.convergence_time = policy_callback.step_count - policy_callback.last_reset_time
+        elif ee_tracking_error > 0.01 and policy_callback.converged:
+            policy_callback.converged = False
+
         action, _states = rl_model.predict(obs, deterministic=True)
         data.ctrl[:] = env._process_action(action)
     policy_callback.step_count = step_count + 1
@@ -48,7 +63,12 @@ if __name__ == "__main__":
     max_num_episodes = 10
     play_episode_length_s = 2
     play_episode_length = int(play_episode_length_s / env.ctrl_timestep)
+    print(play_episode_length, env.ctrl_timestep)
     policy_callback.total_ee_tracking_errors = []
+    policy_callback.total_convergence_times = []
+    policy_callback.converged = False
+    policy_callback.convergence_time = 0
+    policy_callback.last_reset_time = 0
 
     print(f"Loading model from {policy_path}...")
     rl_model = PPO.load(policy_path, device=args.device)
@@ -62,4 +82,6 @@ if __name__ == "__main__":
     mujoco.set_mjcb_control(None)
 
     avg_ee_tracking_error = np.mean(policy_callback.total_ee_tracking_errors)
+    avg_convergence_times = np.mean(policy_callback.total_convergence_times)
     print(f"Average final EE tracking error: {avg_ee_tracking_error:.4f}")
+    #print(f"Average convergence time: {avg_convergence_times:.4f}")

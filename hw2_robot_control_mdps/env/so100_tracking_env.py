@@ -40,6 +40,9 @@ class SO100TrackEnv(gym.Env):
         self.ee_tracking_error = 0.0
         self.ee_tracking_error_integral = 0.0
 
+        self.convergence_time = 0
+        self.converged = False
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed, options=options)
         mujoco.mj_resetData(self.model, self.data)
@@ -53,6 +56,8 @@ class SO100TrackEnv(gym.Env):
         self.data.mocap_pos[0] = reset_target_position(base_pos)
 
         self.current_step = 0
+        self.ee_tracking_error_integral = 0
+        
         return self._get_obs(), {}
 
     def _process_action(self, action):
@@ -67,6 +72,7 @@ class SO100TrackEnv(gym.Env):
             mujoco.mj_step(self.model, self.data)
         self.ee_tracking_error = np.linalg.norm(self.data.site("ee_site").xpos - self.data.mocap_pos[0])
         self.ee_tracking_error_integral += self.ee_tracking_error
+        
         reward = self.compute_reward()
 
         terminated = False

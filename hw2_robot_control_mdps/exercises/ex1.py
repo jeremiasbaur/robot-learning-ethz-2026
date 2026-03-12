@@ -62,12 +62,12 @@ def build_keypoints(count=16, width=0.25, x_offset=0.3, z_offset=0.25):
     Returns:
         np.ndarray: Array of shape (count, 3) containing the generated keypoints.
     """
-    t = np.linspace(0, 2*np.pi, count)
+    t = np.linspace(0, 2*np.pi, count, endpoint=False)
     y, z = get_lemniscate_keypoint(t, width)
     x = np.ones_like(y)*x_offset
     z += z_offset
     
-    return np.stack([x,y,z], axis=1)
+    return np.stack([x,y,z], axis=1, dtype=float)
 
 def ik_track(model, data, site_name, target_pos,
              damping=1e-3, pos_gain=2.0, dt=0.1, max_iters=2000):

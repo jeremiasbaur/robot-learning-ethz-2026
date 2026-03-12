@@ -46,7 +46,7 @@ def generate_quintic_spline_waypoints(start, end, num_points):
     return waypoints
 
 
-def pid_control(tracking_error_history, timestep, Kp=150.0, Ki=0, Kd=0.02):
+def pid_control(tracking_error_history, timestep, Kp=150.0, Ki=0, Kd=0.01):
     """
     TODO:
     Compute the PID control signal based on the tracking error history.
@@ -69,9 +69,9 @@ def pid_control(tracking_error_history, timestep, Kp=150.0, Ki=0, Kd=0.02):
         np.ndarray: Control signal.
     """
     if len(tracking_error_history) == 0:
-        return 0
+        return 0.0
     
     integral = np.sum(tracking_error_history)
-    d_term = 0 if len(tracking_error_history) == 1 else (tracking_error_history[-1] - tracking_error_history[-2])
-    return Kp * tracking_error_history[-1] + Ki * integral * timestep + Kd * d_term / timestep
+    d_term = 0.0 if len(tracking_error_history) == 1 else (tracking_error_history[-1] - tracking_error_history[-2])
+    return Kp * tracking_error_history[-1] + Ki * integral * timestep + Kd * (d_term / timestep)
             

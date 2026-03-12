@@ -5,7 +5,8 @@ from scripts.utils import quat_mul, quat_conjugate, quat_normalize, rot_mat_to_q
 
 
 # ## Deliverables
-# 1. **Video:** Video (.mp4) of the robot moving between the random targets, including the error printouts on your terminal **(< 30 s)**. If you completed the bonus question, include your answers to the theoretical questions, and performance of the new policy **(< 1 min)**.
+# 1. **Video:** Video (.mp4) of the robot moving between the random targets, including the error printouts on your terminal **(< 30 s)**.
+# If you completed the bonus question, include your answers to the theoretical questions, and performance of the new policy **(< 1 min)**.
 # 2. **Code:** Your code with filled in TODOs in `exercises/ex3.py`.
 # 3. **Bonus question**. To get bonus points, the video must include your answers to the theoretical questions, and the code must include your modifications.
 
@@ -78,7 +79,8 @@ def process_action(action: np.ndarray, jnt_range: np.ndarray) -> np.ndarray:
     return jnt_range[:,0] + (1+action) * (jnt_range[:,1]-jnt_range[:,0])/2
 
 
-def compute_reward(ee_tracking_error: float, ee_tracking_error_integral: float=0) -> float:
+#def compute_reward(ee_tracking_error: float) -> float: #, ee_tracking_error_integral: float=0) -> float:
+def compute_reward(ee_tracking_error: float, ee_tracking_error_integral: float=0.0) -> float:
     """
     TODO: 
     Calculate the reward based on the distance (error) to the target. 
@@ -98,10 +100,10 @@ def compute_reward(ee_tracking_error: float, ee_tracking_error_integral: float=0
     Returns:
     - reward: float. The computed reward based on the tracking error. Dimensionality: scalar
     """
-    dense_reward =  np.exp(-2*ee_tracking_error) # + np.exp(-4*ee_tracking_error)*0.5
+    dense_reward =  np.exp(-2*ee_tracking_error)
     sparse_reward = 1.0 if ee_tracking_error < 0.005 else 0.0
-    return dense_reward + sparse_reward
-    return dense_reward + sparse_reward - (1/(1+ee_tracking_error_integral))
+    #return dense_reward + sparse_reward
+    return dense_reward + sparse_reward + (1/(1+ee_tracking_error_integral))
 
 
 def get_obs(qpos: np.ndarray, ee_pos_w: np.ndarray, ee_rot_w: np.ndarray, base_pos_w: np.ndarray, base_rot_w: np.ndarray, target_pos_w: np.ndarray) -> np.ndarray:

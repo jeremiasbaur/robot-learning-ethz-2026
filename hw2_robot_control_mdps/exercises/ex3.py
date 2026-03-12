@@ -3,6 +3,20 @@ import numpy as np
 import __init__
 from scripts.utils import quat_mul, quat_conjugate, quat_normalize, rot_mat_to_quat
 
+
+# ## Deliverables
+# 1. **Video:** Video (.mp4) of the robot moving between the random targets, including the error printouts on your terminal **(< 30 s)**. If you completed the bonus question, include your answers to the theoretical questions, and performance of the new policy **(< 1 min)**.
+# 2. **Code:** Your code with filled in TODOs in `exercises/ex3.py`.
+# 3. **Bonus question**. To get bonus points, the video must include your answers to the theoretical questions, and the code must include your modifications.
+
+# What difference can you observe when the robot is tracking the keypoints on the Lemniscate curve?
+# The robot can't consistently track the points and often orbits around the target points.
+#
+# To improve the performance of the RL policy, what changes can you make in the functions in ex3?
+# Modify these functions (you can also change their arguments, and make corresponding changes in `env/so100_tracking_env.py`).
+# Train another RL policy with your new environments and show the performance in the video, and explain how your changes impact the robot's performance.
+# You can also make changes to the PPO hyperparameters (gamma, ent_coef, etc.). 
+
 """
 # Important note:
 # In physical simulations in Python, it is necessary to correctly modify the values in arrays which are attributes
@@ -84,9 +98,10 @@ def compute_reward(ee_tracking_error: float, ee_tracking_error_integral: float=0
     Returns:
     - reward: float. The computed reward based on the tracking error. Dimensionality: scalar
     """
-    dense_reward =  np.exp(-2*ee_tracking_error)*0.5 + np.exp(-4*ee_tracking_error)*0.5
+    dense_reward =  np.exp(-2*ee_tracking_error) # + np.exp(-4*ee_tracking_error)*0.5
     sparse_reward = 1.0 if ee_tracking_error < 0.005 else 0.0
-    return dense_reward + sparse_reward - sparse_reward*(1/(1+ee_tracking_error_integral))
+    return dense_reward + sparse_reward
+    return dense_reward + sparse_reward - (1/(1+ee_tracking_error_integral))
 
 
 def get_obs(qpos: np.ndarray, ee_pos_w: np.ndarray, ee_rot_w: np.ndarray, base_pos_w: np.ndarray, base_rot_w: np.ndarray, target_pos_w: np.ndarray) -> np.ndarray:

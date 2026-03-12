@@ -1,14 +1,23 @@
 import numpy as np
 
+# ## Deliverables
+# 1. **Video:** Video (.mp4) of the robot moving between the waypoints. **The video length must be less than 2 minutes** including robot motion and theoretical questions.
+# 2. **Code:** Your code with filled in TODOs in `exercises/ex2.py`.
+# 3. **Theoretical questions**. The video must include your answers to the theoretical questions.
+
+
 # To get a feeling for the choice of the PID gains, you will analyze how their choice influences the behavior of the waypoint tracking. 
 # Test different settings of the gains to be able to answer the following:
 # 1. If you keep increasing $K_P$, what issue arises when tracking the waypoints?
-# If the error is large and we have a high K_P, then there is the risk of an overshoot.
+# If the error is large and we have a high K_P, then a strong correction signal is applied and there is the risk of an overshoot
+# and oscillations around the target.
 
 # 2. How does $K_D$ mitigate the effect you saw above when increasing $K_P$?
-# The K_D term penalizes changes of the error, so if we have a lot of harsh movements due to a high K_P term, we get a high derivative which is penalized by K_D.
+# The K_D term penalizes changes of the error and can be seen as damping.
+# If we have a lot of harsh movements due to a high K_P term, we get a high derivative which is penalized by K_D.
+
 # 3. In what scenarios is a non-zero $K_I$ needed for the controller to perform well?
-# If there is a steady-state error that we want to get rid of, then the Integral term will counter-act it.
+# If there is a steady-state error (due to e.g. gravity) that we want to get rid of, then the Integral term will counter-act it.
 
 def generate_quintic_spline_waypoints(start, end, num_points):
 
@@ -37,7 +46,7 @@ def generate_quintic_spline_waypoints(start, end, num_points):
     return waypoints
 
 
-def pid_control(tracking_error_history, timestep, Kp=750.0, Ki=0, Kd=0.02):
+def pid_control(tracking_error_history, timestep, Kp=150.0, Ki=0, Kd=0.02):
     """
     TODO:
     Compute the PID control signal based on the tracking error history.
@@ -63,6 +72,6 @@ def pid_control(tracking_error_history, timestep, Kp=750.0, Ki=0, Kd=0.02):
         return 0
     
     integral = np.sum(tracking_error_history)
-    d_term = 0 if len(tracking_error_history) == 1 else (tracking_error_history[-2] - tracking_error_history[-1])
+    d_term = 0 if len(tracking_error_history) == 1 else (tracking_error_history[-1] - tracking_error_history[-2])
     return Kp * tracking_error_history[-1] + Ki * integral * timestep + Kd * d_term / timestep
             

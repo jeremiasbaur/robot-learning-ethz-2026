@@ -36,51 +36,51 @@
     "description": "Move EE backward (-Y) (recommended: S)"
   },
   "rot_x_pos": {
-    "raw": 54,
-    "ascii": 54,
-    "label": "6",
-    "description": "Rotate EE +X axis"
-  },
-  "rot_x_neg": {
-    "raw": 52,
-    "ascii": 52,
-    "label": "4",
-    "description": "Rotate EE -X axis"
-  },
-  "rot_y_pos": {
-    "raw": 55,
-    "ascii": 55,
-    "label": "7",
-    "description": "Rotate EE +Y axis"
-  },
-  "rot_y_neg": {
-    "raw": 57,
-    "ascii": 57,
-    "label": "9",
-    "description": "Rotate EE -Y axis"
-  },
-  "rot_z_pos": {
     "raw": 51,
     "ascii": 51,
     "label": "3",
-    "description": "Rotate EE +Z axis"
+    "description": "Rotate EE +X axis"
   },
-  "rot_z_neg": {
+  "rot_x_neg": {
     "raw": 49,
     "ascii": 49,
     "label": "1",
+    "description": "Rotate EE -X axis"
+  },
+  "rot_y_pos": {
+    "raw": 101,
+    "ascii": 101,
+    "label": "e",
+    "description": "Rotate EE +Y axis"
+  },
+  "rot_y_neg": {
+    "raw": 113,
+    "ascii": 113,
+    "label": "q",
+    "description": "Rotate EE -Y axis"
+  },
+  "rot_z_pos": {
+    "raw": 100,
+    "ascii": 100,
+    "label": "d",
+    "description": "Rotate EE +Z axis"
+  },
+  "rot_z_neg": {
+    "raw": 97,
+    "ascii": 97,
+    "label": "a",
     "description": "Rotate EE -Z axis"
   },
   "gripper_open": {
-    "raw": 42,
-    "ascii": 42,
-    "label": "*",
+    "raw": 99,
+    "ascii": 99,
+    "label": "c",
     "description": "Open gripper (Jaw +)"
   },
   "gripper_close": {
-    "raw": 47,
-    "ascii": 47,
-    "label": "/",
+    "raw": 120,
+    "ascii": 120,
+    "label": "x",
     "description": "Close gripper (Jaw -)"
   },
   "reset": {
@@ -108,21 +108,21 @@
     "description": "Quit session (recommended: ESC)"
   },
   "goal_cube_red": {
-    "raw": 116,
-    "ascii": 116,
-    "label": "t",
+    "raw": 111,
+    "ascii": 111,
+    "label": "o",
     "description": "Select RED cube as goal (multicube only)"
   },
   "goal_cube_green": {
-    "raw": 122,
-    "ascii": 122,
-    "label": "z",
-    "description": "Select GREEN cube as goal (multicube only)"
-  },
-  "goal_cube_blue": {
     "raw": 117,
     "ascii": 117,
     "label": "u",
+    "description": "Select GREEN cube as goal (multicube only)"
+  },
+  "goal_cube_blue": {
+    "raw": 112,
+    "ascii": 112,
+    "label": "p",
     "description": "Select BLUE cube as goal (multicube only)"
   }
 }

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+os.environ["MUJOCO_GL"] = "GLFW"
+
 import argparse
 import time
 from datetime import datetime

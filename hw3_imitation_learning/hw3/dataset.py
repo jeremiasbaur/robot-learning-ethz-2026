@@ -84,7 +84,7 @@ def load_zarr(
     """
     root = zarr.open_group(str(zarr_path), mode="r")
     data = root["data"]
-
+    
     # ── states: concatenate one or more arrays ────────────────────────
     if state_keys is None:
         sk = root.attrs.get("state_key", "state")

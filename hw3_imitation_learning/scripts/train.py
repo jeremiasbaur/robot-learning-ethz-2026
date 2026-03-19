@@ -9,6 +9,8 @@ Usage:
         --action-keys ...
 """
 
+# --state-keys state_ee_full "state_cube[:3]" state_joints state_obstacle --action-keys action_ee_xyz action_gripper
+# --state-keys state_ee_xyz state_gripper "state_cube[:3]" state_obstacle --action-keys action_ee_xyz action_gripper
 from __future__ import annotations
 
 import argparse
@@ -28,9 +30,9 @@ from hw3.model import BasePolicy, build_policy
 from torch.utils.data import DataLoader, random_split
 
 # TODO: Choose your own hyperparameters!
-EPOCHS = ... 
-BATCH_SIZE = ...
-LR = ...
+EPOCHS = 2000
+BATCH_SIZE = 64
+LR = 3e-4
 VAL_SPLIT = 0.1
 
 
@@ -48,6 +50,15 @@ def train_one_epoch(
         states, action_chunks = batch
         # TODO: Implement the training step for one batch here.
         # This mostly: Get states and action_chunks onto the correct device, compute the loss, and step the optimizer.
+        optimizer.zero_grad()
+        states = states.to(device)
+        action_model = model(states)
+
+        loss = torch.nn.functional.mse_loss(action_model, action_chunks)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
+        n_batches += 1
 
     return total_loss / max(n_batches, 1)
 
@@ -65,6 +76,13 @@ def evaluate(
     for batch in loader:
         states, action_chunks = batch
         # TODO: Implement the evaluation step for one batch here.
+        with torch.no_grad():
+            states = states.to(device)
+            action_model = model(states)
+
+            loss = torch.nn.functional.mse_loss(action_model, action_chunks)
+            total_loss += loss.item()
+            n_batches += 1
 
     return total_loss / max(n_batches, 1)
 
@@ -112,8 +130,8 @@ def main() -> None:
 
     # ── load data ─────────────────────────────────────────────────────
     zarr_paths = [args.zarr]
-    if args.extra_zarr:
-        zarr_paths.extend(args.extra_zarr)
+    #if args.extra_zarr:
+    #   zarr_paths.extend(args.extra_zarr)
 
     if len(zarr_paths) == 1:
         states, actions, ep_ends = load_zarr(
@@ -159,15 +177,15 @@ def main() -> None:
         args.policy,
         state_dim=states.shape[1],
         action_dim=actions.shape[1],
-        # TODO: build with your desired specifications
+        chunk_size=args.chunk_size,
     ).to(device)
 
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Model parameters: {n_params:,}")
 
     # TODO: implement an optimizer and scheduler
-    # optimizer =
-    # scheduler =
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS, eta_min=2e-5)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")

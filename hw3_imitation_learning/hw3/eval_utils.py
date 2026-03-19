@@ -114,16 +114,16 @@ def load_checkpoint(
         action_std=np.asarray(norm_data["action_std"], dtype=np.float32),
     )
 
-    d_model = int(ckpt.get("d_model", 128))
-    depth = int(ckpt.get("depth", 2))
+    #d_model = int(ckpt.get("d_model", 128))
+    #depth = int(ckpt.get("depth", 2))
     policy_type = str(ckpt.get("policy_type", "obstacle"))
     model = build_policy(
         policy_type,
         state_dim=state_dim,
         action_dim=action_dim,
         chunk_size=chunk_size,
-        d_model=d_model,
-        depth=depth,
+        #d_model=d_model,
+        #depth=depth,
     )
     model.load_state_dict(ckpt["model_state_dict"])
     model.to(device)
@@ -154,7 +154,8 @@ def obs_to_state(obs: dict[str, np.ndarray], state_keys: list[str]) -> np.ndarra
             )
         raw = ZARR_KEY_TO_OBS[name](obs)
         if name == "state_joints":
-            raw = raw[:5]
+            continue
+            #raw = raw[:5]
         parts.append(raw[col_slice] if col_slice != slice(None) else raw)
     return np.concatenate(parts).astype(np.float32)
 

@@ -33,7 +33,7 @@ from hw3.dataset import (
     load_and_merge_zarrs,
     load_zarr,
 )
-from hw3.selective_normalizer import SelectiveNormalizer
+#from hw3.selective_normalizer import SelectiveNormalizer
 
 from hw3.model import BasePolicy, build_policy
 
@@ -62,6 +62,7 @@ def train_one_epoch(
         # TODO: Implement the training step for one batch here.
         # This mostly: Get states and action_chunks onto the correct device, compute the loss, and step the optimizer.
         optimizer.zero_grad()
+        action_chunks = action_chunks.to(device)
         states = states.to(device)
         action_model = model(states)
 
@@ -92,6 +93,7 @@ def evaluate(
         with torch.no_grad():
             states = states.to(device)
             action_model = model(states)
+            action_chunks = action_chunks.to(device)
 
             loss = torch.nn.functional.mse_loss(action_model, action_chunks)
             total_loss += loss.item()
@@ -247,7 +249,7 @@ def main() -> None:
                 action_space = base.removeprefix("action_")
                 break
 
-    save_name = f"best_model_{action_space}_{args.policy}.pt"
+    save_name = f"best_model_{action_space}_{args.policy}_32.pt"
 
     n_dagger_eps = 0
     for zp in zarr_paths:

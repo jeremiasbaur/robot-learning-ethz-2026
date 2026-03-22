@@ -301,9 +301,9 @@ def augment_multicube_data(
                 # Permute one-hot: [1,0,0]→[0,1,0], [0,1,0]→[0,0,1], [0,0,1]→[1,0,0]
                 goal = arr[start:end]  # (L, 3)
                 permuted_goal = np.zeros_like(goal)
-                permuted_goal[:, 0] = goal[:, 2]  # red ← blue
-                permuted_goal[:, 1] = goal[:, 0]  # green ← red
-                permuted_goal[:, 2] = goal[:, 1]  # blue ← green
+                permuted_goal[:, 0] = goal[:, 1]  # new red <- old green
+                permuted_goal[:, 1] = goal[:, 2]  # new green <- old blue
+                permuted_goal[:, 2] = goal[:, 0]  # new blue <- old red
                 augmented[key].append(permuted_goal)
             else:
                 # All other data stays the same (actions, ee states, etc.)
@@ -324,9 +324,9 @@ def augment_multicube_data(
                 # Permute one-hot: [1,0,0]→[0,0,1], [0,1,0]→[1,0,0], [0,0,1]→[0,1,0]
                 goal = arr[start:end]  # (L, 3)
                 permuted_goal = np.zeros_like(goal)
-                permuted_goal[:, 0] = goal[:, 1]  # red ← green
-                permuted_goal[:, 1] = goal[:, 2]  # green ← blue
-                permuted_goal[:, 2] = goal[:, 0]  # blue ← red
+                permuted_goal[:, 0] = goal[:, 2]  # new red <- old blue
+                permuted_goal[:, 1] = goal[:, 0]  # new green <- old red
+                permuted_goal[:, 2] = goal[:, 1]  # new blue <- old green
                 augmented[key].append(permuted_goal)
             else:
                 # All other data stays the same

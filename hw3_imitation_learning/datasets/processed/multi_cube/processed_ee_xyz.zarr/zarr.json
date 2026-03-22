@@ -6,12 +6,18 @@
     "state_spec": "ee_pos_xyz(3)",
     "state_key": "state_ee_xyz",
     "action_key": "action_ee_xyz",
-    "num_episodes": 23,
+    "num_episodes": 80,
     "num_dagger_episodes": 0,
-    "num_transitions": 5518,
+    "num_transitions": 16276,
     "source_zarrs": [
       "C:\\Users\\Jeremias\\Documents\\GitHub\\robot-learning-ethz-2026\\hw3_imitation_learning\\datasets\\raw\\multi_cube\\teleop\\2026-03-20_19-29-13\\so100_multicube_teleop.zarr",
-      "C:\\Users\\Jeremias\\Documents\\GitHub\\robot-learning-ethz-2026\\hw3_imitation_learning\\datasets\\raw\\multi_cube\\teleop\\2026-03-21_11-51-44\\so100_multicube_teleop.zarr"
+      "C:\\Users\\Jeremias\\Documents\\GitHub\\robot-learning-ethz-2026\\hw3_imitation_learning\\datasets\\raw\\multi_cube\\teleop\\2026-03-21_11-51-44\\so100_multicube_teleop.zarr",
+      "C:\\Users\\Jeremias\\Documents\\GitHub\\robot-learning-ethz-2026\\hw3_imitation_learning\\datasets\\raw\\multi_cube\\teleop\\2026-03-21_13-45-03\\so100_multicube_teleop.zarr",
+      "C:\\Users\\Jeremias\\Documents\\GitHub\\robot-learning-ethz-2026\\hw3_imitation_learning\\datasets\\raw\\multi_cube\\teleop\\2026-03-21_13-55-43\\so100_multicube_teleop.zarr",
+      "C:\\Users\\Jeremias\\Documents\\GitHub\\robot-learning-ethz-2026\\hw3_imitation_learning\\datasets\\raw\\multi_cube\\teleop\\2026-03-21_13-55-45\\so100_multicube_teleop.zarr",
+      "C:\\Users\\Jeremias\\Documents\\GitHub\\robot-learning-ethz-2026\\hw3_imitation_learning\\datasets\\raw\\multi_cube\\teleop\\2026-03-22_12-53-39\\so100_multicube_teleop.zarr",
+      "C:\\Users\\Jeremias\\Documents\\GitHub\\robot-learning-ethz-2026\\hw3_imitation_learning\\datasets\\raw\\multi_cube\\teleop\\2026-03-22_21-38-10\\so100_multicube_teleop.zarr",
+      "C:\\Users\\Jeremias\\Documents\\GitHub\\robot-learning-ethz-2026\\hw3_imitation_learning\\datasets\\raw\\multi_cube\\teleop\\2026-03-22_23-33-29\\so100_multicube_teleop.zarr"
     ],
     "color_augmented": false
   },

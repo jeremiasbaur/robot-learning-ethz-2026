@@ -21,6 +21,7 @@ Usage examples:
     python scripts/compute_actions.py --action-space ee_full
     python scripts/compute_actions.py --action-space joints
     python scripts/compute_actions.py --action-space joints --datasets-dir ./datasets/raw/multi_cube
+    python scripts/compute_actions.py --action-space ee --datasets-dir ./datasets/raw/multi_cube --augment-colors
 """
 
 from __future__ import annotations
@@ -229,6 +230,139 @@ def trim_to_transitions(
     return trimmed
 
 
+def augment_multicube_data(
+    merged: dict[str, np.ndarray],
+    episode_ends: np.ndarray,
+) -> tuple[dict[str, np.ndarray], np.ndarray]:
+    """Augment multicube data by permuting cube colors.
+    
+    For each episode, creates 2 additional permuted versions:
+    - Permutation 1: red→green, green→blue, blue→red
+    - Permutation 2: red→blue, green→red, blue→green
+    
+    This triples the dataset size.
+    
+    Parameters
+    ----------
+    merged : dict
+        Merged data containing pos_cube_red, pos_cube_green, pos_cube_blue, state_goal
+    episode_ends : np.ndarray
+        Episode end indices
+        
+    Returns
+    -------
+    augmented_merged : dict
+        Augmented data with 3x episodes
+    augmented_episode_ends : np.ndarray
+        Updated episode end indices
+    """
+    # Check if this is multicube data
+    has_multicube = all(
+        key in merged for key in ["pos_cube_red", "pos_cube_green", "pos_cube_blue", "state_goal"]
+    )
+    
+    if not has_multicube:
+        print("  Not multicube data - skipping color augmentation")
+        return merged, episode_ends
+    
+    print("  Applying color permutation augmentation (3x data)...")
+    
+    episode_ranges = get_episode_ranges(episode_ends)
+    
+    # Prepare augmented data containers
+    augmented: dict[str, list[np.ndarray]] = {key: [] for key in merged.keys()}
+    
+    # Color permutations:
+    # Original: [red, green, blue] → [red, green, blue]
+    # Perm1:    [red, green, blue] → [green, blue, red]  (cyclic shift)
+    # Perm2:    [red, green, blue] → [blue, red, green]  (reverse cyclic)
+    
+    for start, end in episode_ranges:
+        ep_len = end - start
+        
+        # Original episode
+        for key, arr in merged.items():
+            if key == "episode_ends" or key.startswith("_"):
+                continue
+            augmented[key].append(arr[start:end])
+        
+        # Permutation 1: red→green, green→blue, blue→red
+        for key, arr in merged.items():
+            if key == "episode_ends" or key.startswith("_"):
+                continue
+            
+            if key == "pos_cube_red":
+                augmented[key].append(merged["pos_cube_green"][start:end])
+            elif key == "pos_cube_green":
+                augmented[key].append(merged["pos_cube_blue"][start:end])
+            elif key == "pos_cube_blue":
+                augmented[key].append(merged["pos_cube_red"][start:end])
+            elif key == "state_goal":
+                # Permute one-hot: [1,0,0]→[0,1,0], [0,1,0]→[0,0,1], [0,0,1]→[1,0,0]
+                goal = arr[start:end]  # (L, 3)
+                permuted_goal = np.zeros_like(goal)
+                permuted_goal[:, 0] = goal[:, 2]  # red ← blue
+                permuted_goal[:, 1] = goal[:, 0]  # green ← red
+                permuted_goal[:, 2] = goal[:, 1]  # blue ← green
+                augmented[key].append(permuted_goal)
+            else:
+                # All other data stays the same (actions, ee states, etc.)
+                augmented[key].append(arr[start:end])
+        
+        # Permutation 2: red→blue, green→red, blue→green
+        for key, arr in merged.items():
+            if key == "episode_ends" or key.startswith("_"):
+                continue
+            
+            if key == "pos_cube_red":
+                augmented[key].append(merged["pos_cube_blue"][start:end])
+            elif key == "pos_cube_green":
+                augmented[key].append(merged["pos_cube_red"][start:end])
+            elif key == "pos_cube_blue":
+                augmented[key].append(merged["pos_cube_green"][start:end])
+            elif key == "state_goal":
+                # Permute one-hot: [1,0,0]→[0,0,1], [0,1,0]→[1,0,0], [0,0,1]→[0,1,0]
+                goal = arr[start:end]  # (L, 3)
+                permuted_goal = np.zeros_like(goal)
+                permuted_goal[:, 0] = goal[:, 1]  # red ← green
+                permuted_goal[:, 1] = goal[:, 2]  # green ← blue
+                permuted_goal[:, 2] = goal[:, 0]  # blue ← red
+                augmented[key].append(permuted_goal)
+            else:
+                # All other data stays the same
+                augmented[key].append(arr[start:end])
+    
+    # Concatenate all augmented episodes
+    augmented_merged: dict[str, np.ndarray] = {}
+    for key in merged.keys():
+        if key == "episode_ends" or key.startswith("_"):
+            continue
+        augmented_merged[key] = np.concatenate(augmented[key], axis=0)
+    
+    # Copy metadata
+    for key in merged.keys():
+        if key.startswith("_"):
+            augmented_merged[key] = merged[key]
+    
+    # Update episode ends (3x episodes, each with same length)
+    new_episode_ends = []
+    running = 0
+    for start, end in episode_ranges:
+        ep_len = end - start
+        # Add 3 episodes (original + 2 permutations)
+        for _ in range(3):
+            running += ep_len
+            new_episode_ends.append(running)
+    
+    augmented_episode_ends = np.array(new_episode_ends, dtype=np.int64)
+    
+    n_original = len(episode_ranges)
+    n_augmented = len(new_episode_ends)
+    print(f"  Augmented: {n_original} episodes → {n_augmented} episodes")
+    
+    return augmented_merged, augmented_episode_ends
+
+
 def load_and_merge_zarrs(zarr_paths: list[Path]) -> dict[str, np.ndarray]:
     """Load and concatenate data from multiple zarr stores.
 
@@ -300,6 +434,11 @@ def main() -> None:
         default=None,
         help="Output zarr path. Default: datasets/processed/<task>/processed_<action-space>.zarr",
     )
+    parser.add_argument(
+        "--augment-colors",
+        action="store_true",
+        help="Apply color permutation augmentation for multicube data (3x dataset size).",
+    )
     args = parser.parse_args()
 
     # ── discover zarr stores ──────────────────────────────────────────
@@ -312,6 +451,11 @@ def main() -> None:
     # ── load & merge ──────────────────────────────────────────────────
     merged = load_and_merge_zarrs(zarr_paths)
     episode_ends = merged["episode_ends"]
+    
+    # ── apply color augmentation if requested ─────────────────────────
+    if args.augment_colors:
+        merged, episode_ends = augment_multicube_data(merged, episode_ends)
+    
     episode_ranges = get_episode_ranges(episode_ends)
     n_episodes = len(episode_ranges)
     n_dagger_episodes = int(merged.get("_num_dagger_episodes", 0))
@@ -355,6 +499,10 @@ def main() -> None:
         else:
             base_dir = base_dir / "single_cube"
         out_path = base_dir / f"processed_{sa_suffix}.zarr"
+        
+        # Add suffix if augmented
+        if args.augment_colors:
+            out_path = base_dir / f"processed_{sa_suffix}_augmented.zarr"
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     print(f"\nWriting to {out_path} ...")
@@ -406,12 +554,15 @@ def main() -> None:
     out_root.attrs["num_dagger_episodes"] = n_dagger_episodes
     out_root.attrs["num_transitions"] = int(states.shape[0])
     out_root.attrs["source_zarrs"] = [str(p) for p in zarr_paths]
+    out_root.attrs["color_augmented"] = args.augment_colors
 
     print(f"Done. {states.shape[0]} transitions written.")
     print(f"  data/{state_key}:  {states.shape}")
     print(f"  data/{action_key}: {actions.shape}")
     print(f"  data/action_gripper: {action_gripper_trimmed.shape}")
     print(f"  meta/episode_ends: {new_ep_ends.shape}")
+    if args.augment_colors:
+        print(f"  Color augmentation applied: 3x episodes")
 
 
 if __name__ == "__main__":

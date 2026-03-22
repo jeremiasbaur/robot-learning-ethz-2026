@@ -11,7 +11,16 @@ Usage:
 
 # --state-keys state_ee_full "state_cube[:3]" state_joints state_obstacle --action-keys action_ee_xyz action_gripper
 # --state-keys state_ee_xyz state_gripper "state_cube[:3]" state_obstacle --action-keys action_ee_xyz action_gripper
+# --state-keys state_ee_xyz state_gripper "original_pos_cube_red[:3]" "original_pos_cube_green[:3]" "original_pos_cube_blue[:3]" state_goal goal_pos --action-keys action_ee_xyz action_gripper
+
+# python scripts/train.py --zarr C:\Users\Jeremias\Documents\GitHub\robot-learning-ethz-2026\hw3_imitation_learning\datasets\processed\multi_cube\processed_ee_xyz_augmented.zarr --state-keys state_ee_xyz state_gripper "original_pos_cube_red[:3]" "original_pos_cube_green[:3]" "original_pos_cube_blue[:3]" state_goal goal_pos --action-keys action_ee_xyz action_gripper --policy multitask
+# python scripts/train.py --zarr C:\Users\Jeremias\Documents\GitHub\robot-learning-ethz-2026\hw3_imitation_learning\datasets\processed\multi_cube\processed_ee_xyz_augmented.zarr --state-keys state_ee_xyz state_gripper "original_pos_cube_red[:3]" "original_pos_cube_green[:3]" "original_pos_cube_blue[:3]" state_goal goal_pos --action-keys action_ee_xyz action_gripper --policy multitask
+
+# python scripts/compute_actions.py --augment-colors --action-space ee --datasets-dir C:\Users\Jeremias\Documents\GitHub\robot-learning-ethz-2026\hw3_imitation_learning\datasets\raw\multi_cube
+
+
 from __future__ import annotations
+
 
 import argparse
 from pathlib import Path
@@ -24,6 +33,8 @@ from hw3.dataset import (
     load_and_merge_zarrs,
     load_zarr,
 )
+from hw3.selective_normalizer import SelectiveNormalizer
+
 from hw3.model import BasePolicy, build_policy
 
 # TODO: Any imports you want from torch or other libraries we use. Not allowed: libraries we don't use
@@ -31,8 +42,8 @@ from torch.utils.data import DataLoader, random_split
 
 # TODO: Choose your own hyperparameters!
 EPOCHS = 2000
-BATCH_SIZE = 64
-LR = 3e-4
+BATCH_SIZE = 128
+LR = 1e-4
 VAL_SPLIT = 0.1
 
 
@@ -72,6 +83,8 @@ def evaluate(
     model.eval()
     total_loss = 0.0
     n_batches = 0
+    
+    goal_onehot = None
 
     for batch in loader:
         states, action_chunks = batch
@@ -83,7 +96,12 @@ def evaluate(
             loss = torch.nn.functional.mse_loss(action_model, action_chunks)
             total_loss += loss.item()
             n_batches += 1
-
+        #goal_onehot = states[-1, :]#13:16]
+        
+    #Debug
+    #attn = model.last_attn_weights[-1, 0].cpu().numpy()
+    #print(f"Attention: red={attn[0]:.3f}, green={attn[1]:.3f}, blue={attn[2]:.3f}")
+    #print(f"Goal: {goal_onehot}")
     return total_loss / max(n_batches, 1)
 
 
@@ -146,8 +164,35 @@ def main() -> None:
             state_keys=args.state_keys,
             action_keys=args.action_keys,
         )
+    # Determine which state indices to skip normalization for
+    # For multicube: state_goal is at indices [13:16] based on provided state_keys in above python train command
+    # state_ee_xyz(3) + state_gripper(1) + red(3) + green(3) + blue(3) + goal(3) + goal_pos(3)
+    skip_indices = None
+    if args.policy == "multitask" and args.state_keys:
+        # Calculate where state_goal is in the concatenated state
+        # This assumes your state_keys order from line 14
+        state_dim_so_far = 0
+        for key in args.state_keys:
+            if "state_goal" in key:
+                # state_goal is 3-dimensional, skip these indices
+                skip_indices = {state_dim_so_far, state_dim_so_far + 1, state_dim_so_far + 2}
+                print(f"Skipping normalization for state_goal at indices {skip_indices}")
+                break
+            # Count dimensions for this key
+            if "[:3]" in key or "state_ee_xyz" in key or "goal_pos" in key:
+                state_dim_so_far += 3
+            elif "state_gripper" in key:
+                state_dim_so_far += 1
+            elif "state_goal" in key:
+                state_dim_so_far += 3
+            # Add more cases if needed
+    
+    # if skip_indices:
+    #     normalizer = SelectiveNormalizer.from_data(states, actions, skip_state_indices=skip_indices)
+    # else:
+    #     normalizer = Normalizer.from_data(states, actions)
+    
     normalizer = Normalizer.from_data(states, actions)
-
     dataset = SO100ChunkDataset(
         states,
         actions,
@@ -185,7 +230,10 @@ def main() -> None:
 
     # TODO: implement an optimizer and scheduler
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS, eta_min=2e-5)
+    cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS-100, eta_min=2e-5)
+    warmup = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=100)
+    scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup, cosine], milestones=[100])
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")

@@ -48,7 +48,7 @@ from hw3.teleop_utils import (
 from so101_gym.constants import ASSETS_DIR
 
 XML_PATH = ASSETS_DIR / "so100_transfer_cube_obstacle_ee.xml"
-
+#XML_PATH = ASSETS_DIR / "so100_multicube_ee.xml"
 
 # ── main DAgger loop ─────────────────────────────────────────────────
 

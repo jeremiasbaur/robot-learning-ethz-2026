@@ -96,7 +96,7 @@ class MultiTaskPolicy(BasePolicy):
             nn.ReLU(),
             nn.LayerNorm(self.d_model),
             nn.Linear(self.d_model, self.d_model)
-        ) # cube pos encoder (shared across all cubes)
+        )
     
         self.bin_encoder = nn.Sequential(
             nn.Linear(3, self.d_model),
@@ -176,6 +176,8 @@ def build_policy(
     state_dim: int,
     action_dim: int,
     chunk_size: int,
+    d_model=None,
+    depth=None,
 ) -> BasePolicy:
     if policy_type == "obstacle":
         return ObstaclePolicy(

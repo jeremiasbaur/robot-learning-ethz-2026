@@ -105,6 +105,16 @@ class MultiTaskPolicy(BasePolicy):
             nn.Linear(self.d_model, self.d_model)
         ) # position of container
         
+        self.goal_encoder = nn.Sequential(
+            nn.Linear(3, self.d_model),
+            nn.ReLU(),
+            nn.LayerNorm(self.d_model),
+            nn.Linear(self.d_model, self.d_model)
+        ) # goal encoder
+
+        self.last_attention = None
+        self.cube_attention = nn.MultiheadAttention(self.d_model, 4, dropout=0.1, batch_first=True)
+
         self.mlp_policy = nn.Sequential(
             nn.Linear(3 * self.d_model, 4*self.d_model),
             nn.ReLU(),
@@ -156,13 +166,30 @@ class MultiTaskPolicy(BasePolicy):
         ee_encoded = self.ee_encoder(ee_gripper)
         container_encoded = self.bin_encoder(goal_pos_rel)
         target_cube_encoded = self.cube_encoder(target_cube_rel)
+        
+        # x = torch.cat([
+        #     ee_encoded,
+        #     target_cube_encoded,
+        #     container_encoded
+        # ], dim=1)
 
+        cube_r = self.cube_encoder(cube_red_rel)
+        cube_g = self.cube_encoder(cube_green_rel)
+        cube_b = self.cube_encoder(cube_blue_rel)
+
+        goal_encoded = self.goal_encoder(goal_onehot)
+        goal_encoded = goal_encoded.unsqueeze(1)
+        cubes_encoded = torch.stack([cube_r, cube_g, cube_b], dim=1)
+
+        target_cube, _ = self.cube_attention(goal_encoded, cubes_encoded, cubes_encoded)
+        self.last_attention = _
+        
         x = torch.cat([
-            ee_encoded,
-            target_cube_encoded,
-            container_encoded
+            ee_encoded.unsqueeze(1),
+            target_cube,
+            container_encoded.unsqueeze(1)
         ], dim=1)
-
+        x = x.view(B, -1)
         out = self.mlp_policy(x)  # (B, action_dim * chunk_size)
         return out.view(B, self.chunk_size, self.action_dim)
 

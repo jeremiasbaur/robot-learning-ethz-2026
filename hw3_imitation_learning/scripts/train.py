@@ -43,7 +43,7 @@ from torch.utils.data import DataLoader, random_split
 # TODO: Choose your own hyperparameters!
 EPOCHS = 2000
 BATCH_SIZE = 128
-LR = 1e-4
+LR = 2e-4
 VAL_SPLIT = 0.1
 
 
@@ -248,8 +248,8 @@ def main() -> None:
             if base != "action_gripper":
                 action_space = base.removeprefix("action_")
                 break
-
-    save_name = f"best_model_{action_space}_{args.policy}_32.pt"
+    
+    save_name = f"best_model_{action_space}_{args.policy}_aug32.pt"
 
     n_dagger_eps = 0
     for zp in zarr_paths:

@@ -2,6 +2,31 @@ import copy
 import numpy as np
 
 
+"""
+
+1. What is the difference between policy iteration and value iteration in terms of their update procedures?
+    Policy iteration constantly switches between updating the value function of the new policy and then updating the policy based on the new value function.
+    Value iteration only updates the value function and at the end of training greedely selects the policy actions based on the value function.
+
+2. What happens if the discount factor `gamma` is close to 0 or 1?
+    If it is close to 0, the future rewards are not really considered because they decay exponentally fast and with a factor close to 0, it is a one-step lookahead prediction because e.g.
+    gamma=0.1 becomes already 0.01 after two steps. The policy only optimizes for short-term performance.
+    
+    If it is close to 1, the future rewards are considered and the policy optimizes for long-term performance. 
+
+3. How does increasing the slip probability (`slip_chance`) affect the optimal policy? 
+   - Compare the cases `slip_chance = 0.0`, `0.01`, and `0.2`.
+   For 0.0: there is no slip chance and hence the policy moves towards the goal in the fastest way possible.
+   For 0.01: in the row 2, column 1:5, we now have the optimal value of moving upward instead of sideways in the 0.0 case.
+   The reason for this is that the risk of falling of the cliff for these six tiles plus in each their downstream "journey" is too high and hence it chooses to go up.
+   For 0.2: Now all the actions in row 2, column 0:9 point upwards, because the reward of slipping of the cliff is negatively priced in.
+   Moreover, the row 1, column 0:7 also changed to upward movement for the same reason.
+
+   - Why does the agent tend to behave more conservatively as stochasticity increases?
+    If it increases, the chance of taking a random action increases and hence the chance to drop of the cliff increases.
+    Therefore, the policy tries to move away from the cliff such the chance of falling of the clip is minimized.
+"""
+
 class PolicyIteration:
     """
     Policy iteration for a finite tabular MDP.
@@ -60,20 +85,24 @@ class PolicyIteration:
                     qsa = 0.0
                     
                     # TODO: compute the updated value of state s under the current policy.
-                    #
+                    # 
                     # Suggested steps:
                     # 1. For each action a, compute the action-value under self.v
                     # 2. Weight q_pi(s, a) by pi[s][a]
                     # 3. Sum over all actions to obtain new_v[s]
-                    raise NotImplementedError("TODO: implement policy evaluation update")
-                
+                    for prob, next_state, reward, done in self.env.P[s][a]:
+                        qsa += (reward + self.gamma*self.v[next_state] * (1 - int(done)))*prob
+                    
+                    qsa *= self.pi[s, a]
+                    qsa_list.append(qsa)
+
                 new_v[s] = sum(qsa_list)
                 max_diff = max(max_diff, abs(new_v[s] - self.v[s]))
 
             self.v = new_v
 
-            # TODO: stop when the value function has converged
-            raise NotImplementedError("TODO: add convergence check")
+            if max_diff < self.theta: break
+
 
     def policy_improvement(self):
         """
@@ -96,7 +125,9 @@ class PolicyIteration:
                 qsa = 0.0
                 
                 # TODO: compute qsa_list for all actions at state s
-                raise NotImplementedError("TODO: compute q-values for policy improvement")
+                for prob, next_state, reward, done in self.env.P[s][a]:
+                    qsa += (reward + self.gamma*self.v[next_state]* (1 - int(done)))*prob
+                qsa_list.append(qsa)
 
             max_q = max(qsa_list)
             num_best_actions = sum(np.isclose(qsa_list, max_q))
@@ -131,8 +162,8 @@ class PolicyIteration:
         while True:
             old_pi = copy.deepcopy(self.pi)
 
-            # TODO: implement the main loop of policy iteration
-            raise NotImplementedError("TODO: implement policy iteration main loop")
+            self.policy_evaluation()
+            new_pi = self.policy_improvement()
 
             if np.allclose(old_pi, new_pi):
                 break
@@ -190,15 +221,18 @@ class ValueIteration:
                     qsa = 0.0
                     
                     # TODO: compute all action-values Q(s, a)
-                    raise NotImplementedError("TODO: implement value iteration update")
+                    for prob, next_state, reward, done in self.env.P[s][a]:
+                        qsa += (reward + self.gamma*self.v[next_state]* (1 - int(done)))*prob
+                    
+                    qsa_list.append(qsa)
 
                 new_v[s] = max(qsa_list)
                 max_diff = max(max_diff, abs(new_v[s] - self.v[s]))
 
             self.v = new_v
             
-            # TODO: stop when the value function has converged
-            raise NotImplementedError("TODO: add convergence check")
+            if max_diff < self.theta:
+                break
 
         self.get_policy()
         return self.v, self.pi
@@ -220,7 +254,10 @@ class ValueIteration:
             for a in range(self.env.n_actions):
                 qsa = 0.0
                 # TODO: compute qsa_list for all actions
-                raise NotImplementedError("TODO: compute q-values for greedy policy extraction")
+                for prob, next_state, reward, done in self.env.P[s][a]:
+                    qsa += (reward + self.gamma*self.v[next_state]* (1 - int(done)))*prob
+                
+                qsa_list.append(qsa)
 
             max_q = max(qsa_list)
             num_best_actions = sum(np.isclose(qsa_list, max_q))

@@ -6,6 +6,23 @@ import torch
 import torch.nn.functional as F
 
 
+"""
+
+1. Why is experience replay important in DQN?
+It is important to increase data (sample) efficiency, 
+reduces correlation between samples and non-stationary distributions.
+This smooths training distribution and reduces divergence in the parameters.
+
+2. What is the role of the target network in DQN? How does it improve stability?
+
+
+3. What is Double DQN, and how does it reduce overestimation bias compared to standard DQN?
+(See: [Deep Reinforcement Learning with Double Q-learning](https://arxiv.org/abs/1509.06461))
+
+
+"""
+
+
 class ReplayBuffer:
     """
     Experience replay buffer for off-policy reinforcement learning.
@@ -37,8 +54,7 @@ class ReplayBuffer:
             next_state (np.ndarray): next state
             done (bool): whether the episode terminates after this transition
         """
-        # TODO: Append the transition to the replay buffer.                  
-        raise NotImplementedError
+        self.buffer.append([state, action, reward, next_state, done])
 
     def sample(self, batch_size):
         """
@@ -106,9 +122,10 @@ class QNet(torch.nn.Module):
         Returns:
             torch.Tensor: Q-values for all actions, shape (batch_size, action_dim)
         """
-        # TODO: Implement the forward pass of the network.         
-        # Use ReLU after the first linear layer.                   
-        raise NotImplementedError
+        x = self.fc1(x)
+        x = torch.nn.functional.relu(x)
+        x = self.fc2(x)
+        return x
 
 
 class DQN:
@@ -169,7 +186,11 @@ class DQN:
         # - For exploitation, convert the state to a torch tensor
         #   of shape (1, state_dim), move it to `self.device`,
         #   and choose the action with the largest Q-value.
-        raise NotImplementedError
+        if np.random.random() < self.epsilon:
+            return np.random.randint(self.action_dim)
+        state = torch.tensor(state, dtype=torch.float32).to(self.device)
+        state = state.unsqueeze(0)
+        return int(torch.argmax(self.q_net(state),dim=1).item())
 
     def predict_action(self, state):
         """
@@ -224,7 +245,9 @@ class DQN:
             # Hint:
             # - Use the target network for next-state values.
             # - DQN target: r + gamma * max_a' Q_target(s', a') * (1 - done)
-            raise NotImplementedError
+            actions = torch.max(self.target_q_net(next_states), dim=1)[0]
+
+            q_targets = rewards + self.gamma * actions.view(-1, 1) * (1-dones)
 
         # Compute DQN loss
         dqn_loss = torch.mean(F.mse_loss(q_values, q_targets))

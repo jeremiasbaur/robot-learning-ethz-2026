@@ -1,6 +1,6 @@
 SAC_PARAMETERS = {
     "seed": 42,
-    "hidden_sizes": [256, 128, 128],
+    "hidden_sizes": [128, 64, 64],
     "total_iterations": 2048, # total number of training iterations
     "learning_start_steps": 1000, # number of env steps to collect before training
     "train_freq": 500, # number of env steps between SAC updates

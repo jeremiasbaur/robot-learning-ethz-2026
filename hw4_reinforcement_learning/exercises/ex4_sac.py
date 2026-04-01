@@ -9,6 +9,29 @@ from rl.networks import DoubleQNet, SquashedGaussianActor
 from rl.buffers import ReplayBatch
 
 
+"""
+
+1. SAC adds an entropy bonus to the reward. What are the benefits of this?
+This encourages exploration and prevents mode collapse.
+
+2. SAC squashes actions through tanh. Why does this require a log-probability correction?
+The probability distribution is non-linearly changed, which is a change of variable
+and hence we need to correct it with the compensation term.
+
+3. The temperature \(\alpha\) is tuned automatically. What happens when the policy's entropy is above vs. below the target?
+If it is below the target, then it will get a gradient update that pushes the policy's entropy towards the target.
+If it is above the target, it will get a gradient update that reduces the policy's entropy.
+x
+
+4. How does SAC compare with PPO in terms of update-to-data (UTD) ratio? (UTD = gradient update steps / environment steps)
+PPO has a lower UTD ratio than SAC.
+
+5. Briefly discuss about the advantages and disadvantages of on-policy vs. off-policy algorithms.
+on-policy: +, -,
+
+off-policy: + can use past data, + increases data effiency, - 
+"""
+
 @dataclass
 class SACUpdateStats:
     actor_loss: float | list[float]

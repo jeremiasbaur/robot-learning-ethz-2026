@@ -14,7 +14,8 @@ reduces correlation between samples and non-stationary distributions.
 This smooths training distribution and reduces divergence in the parameters.
 
 2. What is the role of the target network in DQN? How does it improve stability?
-
+It has frozen weights and gets updated every ´target_update´ steps.
+It provides more stable training signals because it is not constantly changing.
 
 3. What is Double DQN, and how does it reduce overestimation bias compared to standard DQN?
 (See: [Deep Reinforcement Learning with Double Q-learning](https://arxiv.org/abs/1509.06461))

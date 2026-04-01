@@ -9,6 +9,22 @@ from collections.abc import Generator
 from rl.networks import GaussianActor, ValueNet
 from rl.buffers import RolloutBatch
 
+"""
+
+1. Why does PPO clip the probability ratio instead of directly constraining the KL divergence like TRPO?
+What goes wrong if you remove clipping entirely?
+
+Directly constraining the KL divergence would make the problem harder to optimize, clipping the probability ratio
+is a approximation.
+If we remove the clipping, we can have get huge values for actions that previously had tiny chance of occuring due to the ratio p_new/p_old
+
+2. PPO throws away all collected data after each update. Why can't you simply reuse old rollouts for more gradient steps?
+PPO is a on-policy algorithm 
+
+3. What does the GAE parameter \(\lambda\) control? What happens at the extremes \(\lambda = 0\) and \(\lambda = 1\)?
+x
+
+"""
 
 @dataclass
 class PPOUpdateStats:

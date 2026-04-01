@@ -97,7 +97,7 @@ class PPOAgent:
             action_std = self.actor.action_std
             value = self.critic(obs)
 
-        return action, action_clipped, value, action_log_prob, action_mu, action_std
+        return action, action_clipped, value.item(), action_log_prob.item(), action_mu, action_std
 
     def predict_action(self, obs: torch.Tensor):
         """
@@ -171,7 +171,7 @@ class PPOAgent:
         clipped_ratio = torch.clamp(ratio, 1-self.clip_ratio, 1 + self.clip_ratio)
         surrogate_loss = torch.min(ratio * adv_batch, clipped_ratio* adv_batch)
         
-        return (self.surrogate_loss_coeff * surrogate_loss).mean()
+        return -(self.surrogate_loss_coeff * surrogate_loss).mean()
 
     def compute_value_loss(self, val_batch, old_val_batch, ret_batch):
         """
@@ -199,7 +199,7 @@ class PPOAgent:
         """
         # TODO: Implement PPO entropy loss.
         # Hint: PPO maximizes entropy
-        return self.entropy_coeff * entropy_batch.mean()
+        return -self.entropy_coeff * entropy_batch.mean()
 
     def mini_batch_generator(self, batch) -> Generator:
         """
@@ -273,7 +273,7 @@ class PPOAgent:
             surrogate_loss = self.compute_surrogate_loss(logp_batch, old_logp_batch, adv_batch)
             value_loss = self.compute_value_loss(val_batch, old_val_batch, ret_batch)
             entropy_loss = self.compute_entropy_loss(entropy_batch)
-            loss = -(surrogate_loss - value_loss + entropy_loss)
+            loss = (surrogate_loss - value_loss - entropy_loss)
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -292,7 +292,7 @@ class PPOAgent:
         mean_entropy /= num_updates
 
         return PPOUpdateStats(
-            mean_kl=mean_kl,
+            mean_kl=mean_kl.item(),
             mean_surrogate_loss=mean_surrogate_loss,
             mean_value_loss=mean_value_loss,
             mean_entropy=mean_entropy,

@@ -9,17 +9,41 @@ import torch.nn.functional as F
 """
 
 1. Why is experience replay important in DQN?
-It is important to increase data (sample) efficiency, 
-reduces correlation between samples and non-stationary distributions.
-This smooths training distribution and reduces divergence in the parameters.
+
+It is important to increase sample efficiency and
+reduces correlation between samples by randomly sampling data points.
+This smooths the training distribution and reduces divergence in the parameters.
+
 
 2. What is the role of the target network in DQN? How does it improve stability?
-It has frozen weights and gets updated every ´target_update´ steps.
-It provides more stable training signals because it is not constantly changing.
+
+The target network is employed in the calculation of the target value $Y_t^Q$:
+$\boldsymbol{\theta}_{t+1}=\boldsymbol{\theta}_t+\alpha\left(Y_t^{\mathrm{Q}}-Q\left(S_t, A_t ; \boldsymbol{\theta}_t\right)\right) \nabla_{\boldsymbol{\theta}_t} Q\left(S_t, A_t ; \boldsymbol{\theta}_t\right)$
+$Y_t^{\mathrm{DQN}} \equiv R_{t+1}+\gamma \max _a Q\left(S_{t+1}, a ; \boldsymbol{\theta}_t^{-}\right)$
+
+The parameters of the target network are copied every $\tau$ steps.
+
+  Without a target network, the target value would shift at every single step
+because the same network weights are used to calculate both the prediction and the target.
+By keeping the target network fixed, DQN provides a more stable, temporarily stationary target to learn against,
+which dramatically improves the performance of the algorithm.
+
 
 3. What is Double DQN, and how does it reduce overestimation bias compared to standard DQN?
 (See: [Deep Reinforcement Learning with Double Q-learning](https://arxiv.org/abs/1509.06461))
 
+Double DQN uses two networks to estimate the value function.
+The first (online) network is used in the selection for the next action, while the second (target) network is used to evaluate the selected action:
+$Y_t^{\text {DioubleQ }} \equiv R_{t+1}+\gamma Q\left(S_{t+1}, \operatorname{argmax}_a Q\left(S_{t+1}, a ; \boldsymbol{\theta}_t\right) ; \boldsymbol{\theta}_t^{\prime}\right)$
+
+"The idea of Double Q-learning is to reduce overestimations by decomposing the max operation in the target into action selection and action evaluation."
+
+The paper of Double DQN showed that there is a lower bound for the error of the estimation of the value function of $\max _a Q_t(s, a) \geq V_*(s)+\sqrt{\frac{C}{m-1}}$.
+They proof that this estimation error is zero for double DQN.
+  
+Intuitively it can be undestood in the following.
+In DQN, value estimates are inaccurate during learning, estimation errors of any kind can drive the estimates up and away from the true optimal values.
+Double DQN reduces this by decoupling the selection and evaluation of the action.
 
 """
 

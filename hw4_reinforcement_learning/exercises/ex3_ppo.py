@@ -14,15 +14,34 @@ from rl.buffers import RolloutBatch
 1. Why does PPO clip the probability ratio instead of directly constraining the KL divergence like TRPO?
 What goes wrong if you remove clipping entirely?
 
-Directly constraining the KL divergence would make the problem harder to optimize, clipping the probability ratio
-is a approximation.
-If we remove the clipping, we can have get huge values for actions that previously had tiny chance of occuring due to the ratio p_new/p_old
+Directly constraining the KL divergence would make the problem harder to optimize
+because it becomes a second-order optimization.
+Clipping the probability ratio is an approximation to this optimization problem
+that still allows to use complex architectures and e.g. dropout.
+
+If we remove the clipping, we can have get huge values for actions
+that previously had tiny chance of occuring due to the ratio p_new/p_old
+and hence destroying the learning signal.
 
 2. PPO throws away all collected data after each update. Why can't you simply reuse old rollouts for more gradient steps?
-PPO is a on-policy algorithm 
+PPO is a on-policy algorithm and hence we can't reuse old data obtained through a different policy.
+The calculation of the probability ratio $r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$
+can only be calculated "locally" for the new policy and old, previous policy.
+If old data were used, the behaviour would have shifted too much and the probability ratio would be unstable.
 
 3. What does the GAE parameter \(\lambda\) control? What happens at the extremes \(\lambda = 0\) and \(\lambda = 1\)?
-x
+GAE is Generalized Advantage Estimation:
+$\hat{A}_t = \delta_t + (\gamma\lambda)\delta_{t+1} + \dots + (\gamma\lambda)^{T-t+1}\delta_{T-1}$ where $\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$
+
+It controls the bias-variance tradeoff in the advantage estimator by discounting the terms.
+
+If $\begin{array}{lll}\operatorname{GAE}(\gamma, 0): & \hat{A}_t:=\delta_t & =r_t+\gamma V\left(s_{t+1}\right)-V\left(s_t\right)\end{array}$
+it has a bias due to potential inaccuracies in the value function
+but low variance because it is only one term.
+
+If $\begin{array}\operatorname{GAE}(\gamma, 1): & \hat{A}_t:=\sum_{l=0}^{\infty} \gamma^l \delta_{t+l} & =\sum_{l=0}^{\infty} \gamma^l r_{t+l}-V\left(s_t\right)\end{array}$
+It has high variance due to the sum of terms but a reduced bias.
+
 
 """
 
@@ -205,7 +224,7 @@ class PPOAgent:
         value_loss_unclipped = torch.square(val_batch - ret_batch)
         value_clipped = old_val_batch + torch.clamp(val_batch - old_val_batch, -self.clip_ratio, self.clip_ratio)
         value_loss_clipped = torch.square(value_clipped - ret_batch)
-        value_loss = torch.mean(torch.max(value_loss_clipped, value_loss_unclipped))
+        value_loss = 0.5*torch.mean(torch.max(value_loss_clipped, value_loss_unclipped))
         
         return self.value_loss_coeff * value_loss
 
@@ -289,7 +308,7 @@ class PPOAgent:
             surrogate_loss = self.compute_surrogate_loss(logp_batch, old_logp_batch, adv_batch)
             value_loss = self.compute_value_loss(val_batch, old_val_batch, ret_batch)
             entropy_loss = self.compute_entropy_loss(entropy_batch)
-            loss = (surrogate_loss - value_loss - entropy_loss)
+            loss = (surrogate_loss + value_loss + entropy_loss)
 
             self.optimizer.zero_grad()
             loss.backward()

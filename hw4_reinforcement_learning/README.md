@@ -510,7 +510,3 @@ Submit a single video file (`.mp4`) covering all exercises. If the file is too l
 - You may use slides, plots, or screen recordings to support your explanations.
 - Results must be **visible on screen** while you are explaining them.
 - Before submitting check the video and audio. 
-
-
-
-

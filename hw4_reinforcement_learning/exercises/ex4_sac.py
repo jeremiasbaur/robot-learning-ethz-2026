@@ -12,25 +12,47 @@ from rl.buffers import ReplayBatch
 """
 
 1. SAC adds an entropy bonus to the reward. What are the benefits of this?
-This encourages exploration and prevents mode collapse.
+This encourages exploration while ignoring clearly unpromising actions.
+It prevents mode collapse.
+In addition, maximum entropy policies are more robust
+in the face of model and estimation errors.
 
 2. SAC squashes actions through tanh. Why does this require a log-probability correction?
 The probability distribution is non-linearly changed, which is a change of variable
 and hence we need to correct it with the compensation term.
+We need to correct the Gaussian density term using the determinant of the Jacobian of
+the tanh transformation which gives:
+$$\log\pi(a|s)=\log\mu(u|s)-\sum_{i=1}^{D}\log(1-\tanh^{2}(u_i))$$
+
 
 3. The temperature \(\alpha\) is tuned automatically. What happens when the policy's entropy is above vs. below the target?
-If it is below the target, then it will get a gradient update that pushes the policy's entropy towards the target.
-If it is above the target, it will get a gradient update that reduces the policy's entropy.
-x
+
+If it is below the target, then it will get a gradient update that increases alphac.
+A higher alpha increases the reward for randomness, which incentivizes exploration and raising entropy.
+
+If it is above the target, it will get a gradient update that reduces alpha.
+This reduces the entropy bonus, causing the policy to become more deterministic
+and reducing the entropy.
 
 4. How does SAC compare with PPO in terms of update-to-data (UTD) ratio? (UTD = gradient update steps / environment steps)
 PPO has a lower UTD ratio than SAC.
+PPO collects a batch of new trajectories from the interaction with the environment,
+then optimize on the batch and discard the data. This limits the UTD ratio.
+
+SAC is off-policy and has a replay buffer and can create a gradient step for every environment step.
+
 
 5. Briefly discuss about the advantages and disadvantages of on-policy vs. off-policy algorithms.
-on-policy: +, -,
+on-policy:
++ more stable, easier to converge, less brittle to hyperparameters 
+- Poor sample complexity because for every parameter update we need new data.
 
-off-policy: + can use past data, + increases data effiency, - 
+off-policy:
++ High sample efficiency because continuously reuse past experience from replay buffer,
++ exploration of the state space, reduced variance due to replay buffer
+- Difficult to stabilize, brittle to hyperparameters
 """
+
 
 @dataclass
 class SACUpdateStats:

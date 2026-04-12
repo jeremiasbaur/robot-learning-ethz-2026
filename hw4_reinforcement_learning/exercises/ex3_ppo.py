@@ -224,7 +224,7 @@ class PPOAgent:
         value_loss_unclipped = torch.square(val_batch - ret_batch)
         value_clipped = old_val_batch + torch.clamp(val_batch - old_val_batch, -self.clip_ratio, self.clip_ratio)
         value_loss_clipped = torch.square(value_clipped - ret_batch)
-        value_loss = 0.5*torch.mean(torch.max(value_loss_clipped, value_loss_unclipped))
+        value_loss = torch.mean(torch.max(value_loss_clipped, value_loss_unclipped))
         
         return self.value_loss_coeff * value_loss
 
